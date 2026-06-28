@@ -1,0 +1,6 @@
+{
+  "name": "Priora — Your AI Chief of Staff",
+  "description": "Your AI Chief of Staff and productivity companion that tracks deadlines, builds adaptive schedules, and uses Emergency Rescue mode to deconstruct tasks with the Last-Minute Life Saver engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

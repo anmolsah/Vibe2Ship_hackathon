@@ -1,0 +1,159 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Custom configuration and preferences for a user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "role"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "An action item or assignment to complete",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "urgency": { "type": "integer" },
+        "importance": { "type": "integer" },
+        "effort": { "type": "integer" },
+        "durationMinutes": { "type": "integer" },
+        "dueDate": { "type": "string" },
+        "category": { "type": "string" },
+        "status": { "type": "string", "enum": ["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"] },
+        "completedAt": { "type": "string" },
+        "riskScore": { "type": "integer" },
+        "googleCalendarEventId": { "type": "string" },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "subtasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "completed": { "type": "boolean" }
+            },
+            "required": ["id", "title", "completed"]
+          }
+        }
+      },
+      "required": ["id", "title", "urgency", "importance", "effort", "durationMinutes", "dueDate", "category", "status", "riskScore", "dependencies", "subtasks"]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "A daily or weekly consistency loop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "frequency": { "type": "string", "enum": ["daily", "weekly"] },
+        "streak": { "type": "integer" },
+        "completedDays": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "title", "frequency", "streak", "completedDays", "category"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "High-level milestone anchor with progress tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "targetDate": { "type": "string" },
+        "category": { "type": "string" },
+        "progress": { "type": "integer" },
+        "milestones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "completed": { "type": "boolean" }
+            },
+            "required": ["id", "title", "completed"]
+          }
+        }
+      },
+      "required": ["id", "title", "targetDate", "category", "progress", "milestones"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Productivity map logging task and habit completions",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "count": { "type": "integer" }
+      },
+      "required": ["date", "count"]
+    },
+    "ChatSession": {
+      "title": "ChatSession",
+      "description": "The user's ChatGPT style consultation sessions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "sender": { "type": "string", "enum": ["user", "assistant"] },
+              "text": { "type": "string" },
+              "timestamp": { "type": "string" },
+              "suggestedPrompts": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "required": ["id", "sender", "text", "timestamp"]
+          }
+        }
+      },
+      "required": ["id", "title", "createdAt", "messages"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "The user's profile metadata and settings"
+    },
+    "users/{userId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "The user's individual tasks and checklists"
+    },
+    "users/{userId}/habits/{habitId}": {
+      "schema": "Habit",
+      "description": "The user's repeating habit streaks"
+    },
+    "users/{userId}/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "The user's multi-step goals and milestone anchors"
+    },
+    "users/{userId}/activityLogs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "Activity logs for mapping consistency heatmap"
+    },
+    "users/{userId}/chatSessions/{sessionId}": {
+      "schema": "ChatSession",
+      "description": "Consultation chat history sessions"
+    }
+  }
+}

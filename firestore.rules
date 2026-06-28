@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reuseable, hardened primitive helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().role == existing().role // Block privilege escalation
+      );
+      allow delete: if false; // User accounts cannot be deleted directly from client SDK
+
+      function isValidUser(data) {
+        return data.keys().hasAll(['uid', 'name', 'role']) &&
+               data.keys().size() == 3 &&
+               data.uid == request.auth.uid &&
+               data.name is string && data.name.size() <= 100 &&
+               data.role is string && (data.role == 'Student' || data.role == 'Professional' || data.role == 'Founder' || data.role == 'General' || data.role == 'User' || data.role == 'Admin');
+      }
+
+      // 2. Tasks Subcollection
+      match /tasks/{taskId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(taskId) && isValidTask(incoming());
+        allow update: if isOwner(userId) && isValidId(taskId) && isValidTask(incoming());
+        allow delete: if isOwner(userId);
+
+        function isValidTask(data) {
+          return data.keys().hasAll(['id', 'title', 'urgency', 'importance', 'effort', 'durationMinutes', 'dueDate', 'category', 'status', 'riskScore', 'dependencies', 'subtasks']) &&
+                 data.id is string && data.id.size() <= 128 &&
+                 data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+                 data.urgency is int && data.urgency >= 1 && data.urgency <= 10 &&
+                 data.importance is int && data.importance >= 1 && data.importance <= 10 &&
+                 data.effort is int && data.effort >= 1 && data.effort <= 10 &&
+                 data.durationMinutes is int && data.durationMinutes >= 0 && data.durationMinutes <= 10000 &&
+                 data.dueDate is string && data.dueDate.size() <= 100 &&
+                 data.category is string && data.category.size() <= 100 &&
+                 data.status is string && (data.status == 'TODO' || data.status == 'IN_PROGRESS' || data.status == 'REVIEW' || data.status == 'COMPLETED') &&
+                 data.riskScore is int && data.riskScore >= 0 && data.riskScore <= 100 &&
+                 data.dependencies is list && data.dependencies.size() <= 20 &&
+                 data.subtasks is list && data.subtasks.size() <= 50;
+        }
+      }
+
+      // 3. Habits Subcollection
+      match /habits/{habitId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(habitId) && isValidHabit(incoming());
+        allow update: if isOwner(userId) && isValidId(habitId) && isValidHabit(incoming());
+        allow delete: if isOwner(userId);
+
+        function isValidHabit(data) {
+          return data.keys().hasAll(['id', 'title', 'frequency', 'streak', 'completedDays', 'category']) &&
+                 data.id is string && data.id.size() <= 128 &&
+                 data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+                 data.frequency is string && (data.frequency == 'daily' || data.frequency == 'weekly') &&
+                 data.streak is int && data.streak >= 0 && data.streak <= 10000 &&
+                 data.completedDays is list && data.completedDays.size() <= 1000 &&
+                 data.category is string && data.category.size() <= 100;
+        }
+      }
+
+      // 4. Goals Subcollection
+      match /goals/{goalId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(goalId) && isValidGoal(incoming());
+        allow update: if isOwner(userId) && isValidId(goalId) && isValidGoal(incoming());
+        allow delete: if isOwner(userId);
+
+        function isValidGoal(data) {
+          return data.keys().hasAll(['id', 'title', 'targetDate', 'category', 'progress', 'milestones']) &&
+                 data.id is string && data.id.size() <= 128 &&
+                 data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+                 data.targetDate is string && data.targetDate.size() <= 100 &&
+                 data.category is string && data.category.size() <= 100 &&
+                 data.progress is int && data.progress >= 0 && data.progress <= 100 &&
+                 data.milestones is list && data.milestones.size() <= 50;
+        }
+      }
+
+      // 5. Activity Logs Subcollection
+      match /activityLogs/{logId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(logId) && isValidActivityLog(incoming());
+        allow delete: if isOwner(userId);
+
+        function isValidActivityLog(data) {
+          return data.keys().hasAll(['date', 'count']) &&
+                 data.date is string && data.date.size() <= 20 &&
+                 data.count is int && data.count >= 0;
+        }
+      }
+
+      // 6. Chat Sessions Subcollection
+      match /chatSessions/{sessionId} {
+        allow get, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(sessionId) && isValidChatSession(incoming());
+        allow delete: if isOwner(userId);
+
+        function isValidChatSession(data) {
+          return data.keys().hasAll(['id', 'title', 'createdAt', 'messages']) &&
+                 data.id is string && data.id.size() <= 128 &&
+                 data.title is string && data.title.size() <= 200 &&
+                 data.createdAt is string && data.createdAt.size() <= 100 &&
+                 data.messages is list && data.messages.size() <= 100;
+        }
+      }
+    }
+  }
+}
